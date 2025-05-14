@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Custo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        input[type="number"], select {
+            border: 1px solid #ccc;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            width: 100%;
+            box-sizing: border-box; /* Garante que padding não aumente a largura */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+        .result-item {
+            margin-bottom: 0.75rem;
+        }
+        .result-item strong {
+            color: #007bff;
+        }
+         .disclaimer {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #ccc;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="container mx-auto card rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-6 text-center">Calculadora de Custo Real de Compra Parcelada</h1>
+        <p class="mb-6 text-center text-gray-600">Compare o custo real de pagar à vista (Pix) versus parcelar e o impacto da inflação e investimento.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="valorPix" class="block text-sm font-medium text-gray-700 mb-1">1. Valor à vista (Pix):</label>
+                <input type="number" id="valorPix" placeholder="R$" step="0.01" required>
+            </div>
+            <div>
+                <label for="numParcelas" class="block text-sm font-medium text-gray-700 mb-1">2. Número de parcelas:</label>
+                <input type="number" id="numParcelas" placeholder="Ex: 12" step="1" required>
+            </div>
+            <div>
+                <label for="valorParcela" class="block text-sm font-medium text-gray-700 mb-1">3. Valor de cada parcela:</label>
+                <input type="number" id="valorParcela" placeholder="R$" step="0.01" required>
+            </div>
+             <div>
+                <label for="indiceInflacao" class="block text-sm font-medium text-gray-700 mb-1">4. Índice de inflação para projetar:</label>
+                <select id="indiceInflacao" required>
+                    <option value="IPCA">IPCA (Ex: 5.53% a.a.)</option>
+                    <option value="IGP-M">IGP-M (Ex: 8.51% a.a.)</option>
+                    </select>
+            </div>
+             <div>
+                <label for="taxaInvestimentoAnual" class="block text-sm font-medium text-gray-700 mb-1">5. Taxa de retorno ANUAL do investimento (% a.a.):</label>
+                <input type="number" id="taxaInvestimentoAnual" placeholder="Ex: 14.65" step="0.01" required>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button onclick="calcular()">Calcular Custo Real</button>
+        </div>
+
+        <div id="resultados" class="result-section hidden">
+            <h2 class="text-xl font-bold mb-4">Resultados:</h2>
+
+            <div id="resultadosNominais" class="result-item">
+                <h3 class="text-lg font-semibold mb-2">Resultados Nominais:</h3>
+                <p>Valor à vista (Pix): <strong id="resultadoPixNominal"></strong></p>
+                <p>Total Nominal Parcelado: <strong id="resultadoTotalNominal"></strong></p>
+                <p>Juros Nominais Pagos: <strong id="resultadoJurosNominais"></strong></p>
+            </div>
+
+            <div id="resultadosRealInflacao" class="result-item mt-4">
+                 <h3 class="text-lg font-semibold mb-2">Custo Real (Parcelas vs Inflação):</h3>
+                 <p>Taxa de Inflação Anual Projetada (<span id="indiceInflacaoNome"></span>): <strong id="resultadoTaxaInflacaoAnual"></strong></p>
+                 <p>Taxa de Inflação Mensal Projetada: <strong id="resultadoTaxaInflacaoMensal"></strong></p>
+                 <p>Custo Total Real das Parcelas: <strong id="resultadoTotalRealInflacao"></strong></p>
+                 <p>Diferença Real vs Pix (apenas inflação): <strong id="resultadoDiferencaRealInflacao"></strong></p>
+            </div>
+
+             <div id="resultadosRealInvestimento" class="result-item mt-4">
+                 <h3 class="text-lg font-semibold mb-2">Custo Real (Pix Investido vs Dívida):</h3>
+                 <p>Taxa de Retorno Anual Projetada do Investimento: <strong id="resultadoTaxaInvestimentoAnual"></strong></p>
+                 <p>Taxa de Retorno Mensal Projetada do Investimento: <strong id="resultadoTaxaInvestimentoMensal"></strong></p>
+                 <p>Saldo Nominal Final do Investimento: <strong id="resultadoSaldoNominalFinal"></strong></p>
+                 <p>Saldo Real Final do Investimento: <strong id="resultadoSaldoRealFinal"></strong></p>
+                 <p>Custo Real Líquido (Pix Investido e Parcelas): <strong id="resultadoCustoRealLiquido"></strong></p>
+            </div>
+
+             <div id="conclusao" class="result-item mt-4">
+                 <h3 class="text-lg font-semibold mb-2">Conclusão Simplificada:</h3>
+                 <p>Valor à vista (Pix): <strong id="conclusaoPix"></strong></p>
+                 <p>Custo Real da Dívida (apenas inflação): <strong id="conclusaoRealInflacao"></strong></p>
+                 <p>Custo Real Líquido (Pix Investido e Dívida): <strong id="conclusaoRealInvestimento"></strong></p>
+                 <p class="mt-2" id="analiseConclusao"></p>
+            </div>
+
+            <p class="disclaimer">
+                <strong>Importante:</strong> Esta é uma SIMULAÇÃO SIMPLIFICADA baseada nas taxas de inflação e investimento que você forneceu/foram usadas. Projeções futuras de inflação e retornos de investimento são incertos e os valores reais podem variar. Juros reais de investimentos também podem ter impacto de impostos (IR), que não foram considerados aqui. Taxas de juros de cartão de crédito podem ter outros encargos não considerados.
+            </p>
+
+        </div>
+    </div>
+
+    <script>
+        function calcular() {
+            // Obter valores dos inputs
+            const valorPix = parseFloat(document.getElementById('valorPix').value);
+            const numParcelas = parseInt(document.getElementById('numParcelas').value);
+            const valorParcela = parseFloat(document.getElementById('valorParcela').value);
+            const indiceInflacao = document.getElementById('indiceInflacao').value;
+            const taxaInvestimentoAnualPct = parseFloat(document.getElementById('taxaInvestimentoAnual').value);
+
+            // Validar inputs básicos
+            if (isNaN(valorPix) || isNaN(numParcelas) || isNaN(valorParcela) || isNaN(taxaInvestimentoAnualPct) || valorPix <= 0 || numParcelas <= 0 || valorParcela <= 0 || taxaInvestimentoAnualPct < 0) {
+                alert("Por favor, preencha todos os campos com valores válidos e positivos.");
+                return;
+            }
+
+             if (valorParcela * numParcelas < valorPix * 0.95) {
+                 if (!confirm(`A soma das parcelas (${(valorParcela * numParcelas).toFixed(2)}) parece muito baixa comparada ao valor Pix (${valorPix.toFixed(2)}). Deseja continuar mesmo assim?`)) {
+                     return;
+                 }
+            }
+
+
+            // Dados de inflação hardcoded (exemplo)
+            const inflacaoIndices = {
+                'IPCA': 0.0553, // Exemplo: IPCA acumulado 12 meses até Abril/2025
+                'IGP-M': 0.0851 // Exemplo: IGP-M acumulado 12 meses até Abril/2025
+            };
+            const taxaInflacaoAnual = inflacaoIndices[indiceInflacao];
+
+            // Converter taxas anuais para mensais (capitalização composta)
+            const taxaInflacaoMensal = Math.pow(1 + taxaInflacaoAnual, 1/12) - 1;
+            const taxaInvestimentoAnual = taxaInvestimentoAnualPct / 100.0;
+            const taxaInvestimentoMensal = Math.pow(1 + taxaInvestimentoAnual, 1/12) - 1;
+
+            // --- Cálculos ---
+
+            // 1. Custo Nominal
+            const totalNominalParcelado = valorParcela * numParcelas;
+            const jurosNominais = totalNominalParcelado - valorPix;
+
+            // 2. Custo Real (apenas parcelas vs inflação)
+            let totalRealParcelado = 0;
+            for (let i = 1; i <= numParcelas; i++) {
+                const mesesFuturo = i;
+                const fatorDescontoInflacao = Math.pow(1 + taxaInflacaoMensal, mesesFuturo);
+                const valorRealParcela = valorParcela / fatorDescontoInflacao;
+                totalRealParcelado += valorRealParcela;
+            }
+
+            // 3. Custo Real (Pix Investido vs Parcelas + Inflação + Investimento)
+            let saldoInvestimentoNominal = valorPix;
+            for (let i = 1; i <= numParcelas; i++) {
+                // Saldo rende no mês
+                const rendimentoMes = saldoInvestimentoNominal * taxaInvestimentoMensal;
+                saldoInvestimentoNominal += rendimentoMes;
+
+                // Paga a parcela do saldo (retira o valor nominal)
+                saldoInvestimentoNominal -= valorParcela;
+            }
+            const saldoFinalNominal = saldoInvestimentoNominal;
+
+            // Calcular o valor real do saldo final nominal (descontando a inflação acumulada)
+            const inflacaoAcumuladaPeriodoTotal = Math.pow(1 + taxaInflacaoMensal, numParcelas);
+            const saldoFinalReal = saldoFinalNominal / inflacaoAcumuladaPeriodoTotal;
+
+            // O custo real líquido é o valor inicial investido (em termos de poder de compra inicial)
+            // menos o que sobrou desse investimento (em termos de poder de compra inicial)
+            const custoRealLiquidoComInvestimento = valorPix - saldoFinalReal;
+
+
+            // --- Exibir Resultados ---
+            document.getElementById('resultados').classList.remove('hidden');
+
+            // Resultados Nominais
+            document.getElementById('resultadoPixNominal').innerText = `R$ ${valorPix.toFixed(2)}`;
+            document.getElementById('resultadoTotalNominal').innerText = `R$ ${totalNominalParcelado.toFixed(2)}`;
+            document.getElementById('resultadoJurosNominais').innerText = `R$ ${jurosNominais.toFixed(2)}`;
+
+            // Resultados Real Inflação
+            document.getElementById('indiceInflacaoNome').innerText = indiceInflacao;
+            document.getElementById('resultadoTaxaInflacaoAnual').innerText = `${(taxaInflacaoAnual * 100).toFixed(2)}% a.a.`;
+            document.getElementById('resultadoTaxaInflacaoMensal').innerText = `${(taxaInflacaoMensal * 100).toFixed(3)}% a.m.`;
+            document.getElementById('resultadoTotalRealInflacao').innerText = `R$ ${totalRealParcelado.toFixed(2)}`;
+            document.getElementById('resultadoDiferencaRealInflacao').innerText = `R$ ${(totalRealParcelado - valorPix).toFixed(2)}`;
+
+            // Resultados Real Investimento
+            document.getElementById('resultadoTaxaInvestimentoAnual').innerText = `${taxaInvestimentoAnualPct.toFixed(2)}% a.a.`;
+            document.getElementById('resultadoTaxaInvestimentoMensal').innerText = `${(taxaInvestimentoMensal * 100).toFixed(3)}% a.m.`;
+            document.getElementById('resultadoSaldoNominalFinal').innerText = `R$ ${saldoFinalNominal.toFixed(2)}`;
+            document.getElementById('resultadoSaldoRealFinal').innerText = `R$ ${saldoFinalReal.toFixed(2)}`;
+            document.getElementById('resultadoCustoRealLiquido').innerText = `R$ ${custoRealLiquidoComInvestimento.toFixed(2)}`;
+
+            // Conclusão
+            document.getElementById('conclusaoPix').innerText = `R$ ${valorPix.toFixed(2)}`;
+            document.getElementById('conclusaoRealInflacao').innerText = `R$ ${totalRealParcelado.toFixed(2)}`;
+            document.getElementById('conclusaoRealInvestimento').innerText = `R$ ${custoRealLiquidoComInvestimento.toFixed(2)}`;
+
+            let analiseTexto = "";
+            if (custoRealLiquidoComInvestimento < 0) {
+                 analiseTexto = `Investir o valor do Pix e usar o rendimento + capital para pagar as parcelas resultaria em um **ganho real de R$ ${(-custoRealLiquidoComInvestimento).toFixed(2)}** em poder de compra, comparado a simplesmente ter o valor Pix inicial. Nesta simulação, a estratégia de investir e pagar parcelas foi a mais vantajosa em termos de poder de compra real.`;
+            } else if (Math.abs(custoRealLiquidoComInvestimento - valorPix) < 0.01) {
+                 analiseTexto = `Pagar à vista (Pix) e a estratégia de investir e pagar parcelas tiveram custos reais líquidos **muito próximos**. A diferença real é mínima.`;
+            } else if (custoRealLiquidoComInvestimento < totalRealParcelado) {
+                 analiseTexto = `A estratégia de investir o valor do Pix e usar o rendimento + capital para pagar as parcelas (custo real líquido de R$ ${custoRealLiquidoComInvestimento.toFixed(2)}) foi **mais vantajosa** do que simplesmente pagar as parcelas sem investir o valor à vista (custo real de R$ ${totalRealParcelado.toFixed(2)}). No entanto, pagar à vista (Pix) por R$ ${valorPix.toFixed(2)} ainda seria a opção com **menor custo real** nesta simulação.`;
+            } else {
+                 analiseTexto = `O custo real líquido, mesmo considerando o investimento (R$ ${custoRealLiquidoComInvestimento.toFixed(2)}), foi **maior ou igual** ao custo real de apenas pagar as parcelas (R$ ${totalRealParcelado.toFixed(2)}). Nesta simulação, as parcelas têm um custo que supera a combinação do rendimento do investimento e o ajuste da inflação. Pagar à vista (Pix) por R$ ${valorPix.toFixed(2)} seria a opção **mais vantajosa** em termos de poder de compra real.`;
+            }
+            document.getElementById('analiseConclusao').innerHTML = analiseTexto; // Usar innerHTML para negrito
+        }
+    </script>
+</body>
+</html>
